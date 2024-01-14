@@ -2,39 +2,41 @@
 """
 Fabric script based on the file 2-do_deploy_web_static.py that creates and
 distributes an archive to the web servers
+
+execute: fab -f 3-deploy_web_static.py deploy -i ~/.ssh/id_rsa -u ubuntu
 """
 
 from fabric.api import env, local, put, run
 from datetime import datetime
 from os.path import exists, isdir
-env.hosts = ['142.44.167.228', '144.217.246.195']
+env.hosts = ['54.173.87.162', '18.210.20.153']
 
 
 def do_pack():
     """generates a tgz archive"""
     try:
-        dt = datetime.now().strftime("%Y%m%d%H%M%S")
+        date = datetime.now().strftime("%Y%m%d%H%M%S")
         if isdir("versions") is False:
             local("mkdir versions")
-        fl_name = "versions/web_static_{}.tgz".format(dt)
-        local("tar -cvzf {} web_static".format(fl_name))
-        return fl_name
+        file_name = "versions/web_static_{}.tgz".format(date)
+        local("tar -cvzf {} web_static".format(file_name))
+        return file_name
     except:
         return None
 
 
-def do_deploy(arch_path):
+def do_deploy(archive_path):
     """distributes an archive to the web servers"""
-    if exists(arch_path) is False:
+    if exists(archive_path) is False:
         return False
     try:
-        file_nm = arch_path.split("/")[-1]
-        no_ext = file_nm.split(".")[0]
+        file_n = archive_path.split("/")[-1]
+        no_ext = file_n.split(".")[0]
         path = "/data/web_static/releases/"
-        put(arch_path, '/tmp/')
+        put(archive_path, '/tmp/')
         run('mkdir -p {}{}/'.format(path, no_ext))
-        run('tar -xzf /tmp/{} -C {}{}/'.format(file_nm, path, no_ext))
-        run('rm /tmp/{}'.format(file_nm))
+        run('tar -xzf /tmp/{} -C {}{}/'.format(file_n, path, no_ext))
+        run('rm /tmp/{}'.format(file_n))
         run('mv {0}{1}/web_static/* {0}{1}/'.format(path, no_ext))
         run('rm -rf {}{}/web_static'.format(path, no_ext))
         run('rm -rf /data/web_static/current')
@@ -46,7 +48,7 @@ def do_deploy(arch_path):
 
 def deploy():
     """creates and distributes an archive to the web servers"""
-    arch_path = do_pack()
-    if arch_path is None:
+    archive_path = do_pack()
+    if archive_path is None:
         return False
-    return do_deploy(arch_path)
+    return do_deploy(archive_path)
